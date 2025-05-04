@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException,Query
 from dbs.session import get_session
 from models.models import Movie, Rating, User
 from schemas.schemas import MovieCreate, RatingCreate, MovieResponse, RatingResponse
@@ -18,14 +18,16 @@ def create_movie(movie: MovieCreate, user=Depends(get_current_user), session = D
     return {"message": f"Фильм{movie.title} успешно добавлен"}
 
 @router.post("/ratings/", response_model=RatingResponse)
-def create_rating(rating: RatingCreate, session = Depends(get_session)):
-    db_movie = session.get(Movie, rating.movie_id)
-    if not db_movie:
+def create_rating(
+    rating: RatingCreate,
+    current_user: User = Depends(get_current_user),
+    session=Depends(get_session)
+):
+    movie = session.exec(select(Movie).where(Movie.title == rating.title)).first()
+    if not movie:
         raise HTTPException(status_code=404, detail="Фильм не найден")
-    db_user = session.get(User, rating.user_id)
-    if not db_user:
-        raise HTTPException(status_code=404, detail="Пользователь не найден")
-    db_rating = Rating(rating=rating.rating, user_id=rating.user_id, movie_id=rating.movie_id)
+
+    db_rating = Rating(rating=rating.rating, user_id=current_user.id, movie_id=movie.id)
     session.add(db_rating)
     session.commit()
     session.refresh(db_rating)
@@ -44,19 +46,27 @@ def update_movie(movie_id: int, movie: MovieCreate, session=Depends(get_session)
     session.commit()
     return db_movie
 
-@router.get("/movies/{movie_id}/", response_model=MovieResponse)
-def get_movie(movie_id: int, session=Depends(get_session)):
-    db_movie = session.get(Movie, movie_id)
-    if not db_movie:
-        raise HTTPException(status_code=404, detail="Фильм не найден")
-    result = session.exec(
-        select(func.avg(Rating.rating))
-        .where(Rating.movie_id == movie_id)
-    ).one()
-    avg_rating = result or 0
+@router.get("/movies/get/", response_model=list[MovieResponse])
+def get_movie(
+    title: str = Query(..., min_length=1),
+    session=Depends(get_session)
+):
+    movies = session.exec(
+        select(Movie).where(func.lower(Movie.title).like(f"%{title.lower()}%"))
+    ).all()
 
-    # Возвращаем объект MovieResponse с добавленным рейтингом
-    return MovieResponse(
-        **db_movie.dict(),
-        average_rating=round(avg_rating, 2)
-    )
+    if not movies:
+        raise HTTPException(status_code=404, detail="Фильмы не найдены")
+
+    result = []
+    for movie in movies:
+        avg_rating = session.exec(
+            select(func.avg(Rating.rating)).where(Rating.movie_id == movie.id)
+        ).one() or 0
+
+        result.append(MovieResponse(
+            **movie.dict(),
+            average_rating=round(avg_rating, 2)
+        ))
+
+    return result

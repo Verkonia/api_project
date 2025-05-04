@@ -38,8 +38,7 @@ class MovieResponse(BaseModel):
 
 # Схема для создания рейтинга
 class RatingCreate(BaseModel):
-    user_id: int
-    movie_id: int
+    title: str
     rating: float  # Рейтинг от 0 до 10
 
 # Схема для ответа о рейтинге (будет использоваться в response_model)
