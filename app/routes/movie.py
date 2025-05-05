@@ -9,13 +9,16 @@ from sqlmodel import select, func
 router = APIRouter()
 
 @router.post("/movies/")
-def create_movie(movie: MovieCreate, user=Depends(get_current_user), session = Depends(get_session)):
+def create_movie(movie: MovieCreate, user=Depends(get_current_user), 
+                 session = Depends(get_session)):
 
-    db_movie = Movie(title=movie.title, description=movie.description, release_year=movie.release_year,genre =movie.genre, director=movie.director, added_by=user.id)
+    db_movie = Movie(title=movie.title, description=movie.description, 
+                     release_year=movie.release_year,genre =movie.genre, 
+                     director=movie.director, added_by=user.id)
     session.add(db_movie)
     session.commit()
     session.refresh(db_movie)
-    return {"message": f"Фильм{movie.title} успешно добавлен"}
+    return {"message": f"Фильм {movie.title} успешно добавлен"}
 
 @router.post("/ratings/", response_model=RatingResponse)
 def create_rating(

@@ -30,3 +30,21 @@ packages = [{include = "api_project", from = "src"}]
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pylint.MASTER]
+init-hook = '''
+import sys, pathlib;
+sys.path.append(str(pathlib.Path(__file__).parent.resolve()));
+sys.path.append(str(pathlib.Path(__file__).parent.joinpath("app").resolve()));
+'''
+
+[tool.pylint.IMPORTS]
+ignored-modules = [
+    "app.dbs.database",
+    "app.routes",
+    "app.dbs.session",
+    "app.models.models",
+    "app.config",
+    'app.schemas.schemas',
+    'app.core.security'
+]
