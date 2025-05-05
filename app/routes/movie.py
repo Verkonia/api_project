@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException,Query
-from dbs.session import get_session
-from models.models import Movie, Rating, User
-from schemas.schemas import MovieCreate, RatingCreate, MovieResponse, RatingResponse
-from core.security import get_current_user
+from app.dbs.session import get_session
+from app.models.models import Movie, Rating, User
+from app.schemas.schemas import MovieCreate, RatingCreate, MovieResponse, RatingResponse
+from app.core.security import get_current_user
 from sqlmodel import select, func
 
 
